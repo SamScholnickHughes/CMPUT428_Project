@@ -7,7 +7,7 @@ import time
 import ast
 from ev3dev2.motor import LargeMotor
 
-from ev3dev2.motor import OUTPUT_B, OUTPUT_D
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B, OUTPUT_C, OUTPUT_D
 # from util import ArmMotor
 
 # This class handles the client side of communication. It has a set of predefined messages to send to the server as well as functionality to poll and decode data.
@@ -17,11 +17,12 @@ class Client:
         print("Setting up client\nAddress: " + host + "\nPort: " + str(port))
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
         self.s.connect((host, port))  
-        self.done = False      
-        self.first_motor = LargeMotor(OUTPUT_D)
+        self.done = False
+
+        self.first_motor = LargeMotor(OUTPUT_A)
         self.second_motor = LargeMotor(OUTPUT_B)
-        self.first_motor.position = 0
-        self.second_motor.position = 0
+        self.third_motor = LargeMotor(OUTPUT_C)
+        self.fourth_motor = LargeMotor(OUTPUT_D)
             
         
     # Block until a message from the server is received. When the message is received it will be decoded and returned as a string.
@@ -56,8 +57,10 @@ class Client:
 
     def move_cmd(self, data):
         speeds = [float(speed) for speed in data.split(",")]
-        self.second_motor.on(speeds[0])
-        self.first_motor.on(speeds[1])
+        self.first_motor.on(speeds[0])
+        self.second_motor.on(speeds[1])
+        self.third_motor.on(speeds[2])
+        self.fourth_motor.on(speeds[3])
         self.sendDone()
 
     def get_angles(self, data):
@@ -67,13 +70,31 @@ class Client:
 
 
     def get_done(self, data):
+        self.first_motor.on(0)
+        self.second_motor.on(0)
+        self.third_motor.on(0)
+        self.fourth_motor.on(0)
         self.done = True
         self.sendDone()
 
+def connect(hosts, port = 9999):
+    connected = False
+    for host in hosts:
+        try:
+            client = Client(host, port)
+            connected = True
+            break
+        except OSError:
+            continue
+    if connected:
+        return client
+    else:
+        raise Exception("Could not connect to any of the listed hosts") 
 
-host = "169.254.79.135"
+host = "169.254.76.86"
+hosts = ["169.254.76.86", "169.254.247.244"]
 port = 9999
-client = Client(host, port)
+client = connect(hosts)
 i = 0
 DONE = False
 
